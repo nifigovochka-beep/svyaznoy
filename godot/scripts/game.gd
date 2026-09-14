@@ -12,6 +12,7 @@ extends Node3D
 @onready var over_title: Label = $UI/Over/Card/Title
 @onready var over_sub: Label = $UI/Over/Card/Sub
 @onready var shop_tokens: Label = $UI/Shop/Card/Tokens
+var world: WorldStreamer
 
 const SAVE := "user://svyaznoy.save"
 const GOAL := 2200.0
@@ -25,73 +26,77 @@ var engine := false
 var kit := false
 var kit_left := 0
 var zone := "ПОЛЕ"
-var spawned: Array[Node3D] = []
+var hazards: Array[Node3D] = []
 var spawn_acc := 0.0
+var fuel_label: Label
 
 func _ready() -> void:
+	if has_node("World"):
+		world = $World
+	else:
+		var w := Node3D.new()
+		w.name = "World"
+		w.set_script(load("res://scripts/world.gd"))
+		add_child(w)
+		world = w
 	_load()
 	_refresh_menu()
 	playing = false
+	fuel_label = Label.new()
+	fuel_label.name = "Fuel"
+	fuel_label.position = Vector2(24, 96)
+	$UI/HUD.add_child(fuel_label)
 
 func _process(delta: float) -> void:
 	if not playing:
 		return
 	var dist := start_z - player.global_position.z
-	if dist < 500.0:
-		zone = "ПОЛЕ"
-	elif dist < 1000.0:
-		zone = "ПОСАДКА"
-	elif dist < 1500.0:
-		zone = "СЕЛО"
-	elif dist < GOAL:
-		zone = "ПУСТОШЬ"
-	else:
-		zone = "СВОИ"
-		_end(true)
-		return
+	zone = world.biome_at(dist)
 	hud_zone.text = zone
 	hud_dist.text = "%d м" % int(dist)
-	hud_speed.text = "%d км/ч" % int(player.speed * 3.2)
+	hud_speed.text = "%d км/ч" % int(player.speed * 3.4)
+	fuel_label.text = "топливо %d" % int(player.fuel)
+	world.sync(player.global_position.z, dist)
+	if player.fuel <= 0.0:
+		_end(false, "топливо кончилось")
+		return
+	if dist >= GOAL:
+		_end(true, "свои приняли пакет")
+		return
 	spawn_acc += delta
-	if spawn_acc > 1.1:
+	if spawn_acc > 1.05:
 		spawn_acc = 0.0
-		_spawn_hazard()
+		_spawn_hazard(dist)
 
-func _spawn_hazard() -> void:
-	var kinds := ["wreck", "crater", "puddle", "bush", "drone"]
+func _spawn_hazard(dist: float) -> void:
+	var kinds := ["wreck", "crater", "puddle", "bush"]
+	if dist > 900.0:
+		kinds.append("drone")
 	var kind: String = kinds[randi() % kinds.size()]
 	var body := Area3D.new()
-	body.name = kind
-	body.position = Vector3(randf_range(-5.0, 5.0), 0.4, player.global_position.z - 40.0)
-	var mesh := MeshInstance3D.new()
+	body.monitoring = true
+	body.position = Vector3(randf_range(-4.6, 4.6), 0.35, player.global_position.z - 42.0)
 	var box := BoxMesh.new()
+	var mat := StandardMaterial3D.new()
 	match kind:
 		"wreck":
-			box.size = Vector3(2.4, 1.2, 3.2)
-			var mat := StandardMaterial3D.new()
-			mat.albedo_color = Color(0.15, 0.15, 0.13)
-			box.material = mat
+			box.size = Vector3(2.2, 1.1, 3.0)
+			mat.albedo_color = Color(0.12, 0.12, 0.11)
 		"crater":
-			box.size = Vector3(2.2, 0.2, 2.2)
-			var mat2 := StandardMaterial3D.new()
-			mat2.albedo_color = Color(0.18, 0.12, 0.08)
-			box.material = mat2
+			box.size = Vector3(2.0, 0.18, 2.0)
+			mat.albedo_color = Color(0.16, 0.1, 0.07)
 		"puddle":
-			box.size = Vector3(2.0, 0.08, 1.6)
-			var mat3 := StandardMaterial3D.new()
-			mat3.albedo_color = Color(0.2, 0.32, 0.38)
-			box.material = mat3
+			box.size = Vector3(1.8, 0.06, 1.4)
+			mat.albedo_color = Color(0.18, 0.28, 0.32)
 		"drone":
-			box.size = Vector3(1.2, 0.2, 1.2)
-			body.position.y = 4.0
-			var mat4 := StandardMaterial3D.new()
-			mat4.albedo_color = Color(0.05, 0.05, 0.05)
-			box.material = mat4
+			box.size = Vector3(1.1, 0.18, 1.1)
+			body.position.y = 3.6
+			mat.albedo_color = Color(0.04, 0.04, 0.04)
 		_:
-			box.size = Vector3(0.8, 1.4, 0.8)
-			var mat5 := StandardMaterial3D.new()
-			mat5.albedo_color = Color(0.16, 0.28, 0.12)
-			box.material = mat5
+			box.size = Vector3(0.7, 1.3, 0.7)
+			mat.albedo_color = Color(0.14, 0.24, 0.1)
+	box.material = mat
+	var mesh := MeshInstance3D.new()
 	mesh.mesh = box
 	body.add_child(mesh)
 	var col := CollisionShape3D.new()
@@ -101,39 +106,45 @@ func _spawn_hazard() -> void:
 	body.add_child(col)
 	body.body_entered.connect(_on_hit.bind(kind, body))
 	add_child(body)
-	spawned.append(body)
+	hazards.append(body)
 
 func _on_hit(body: Node3D, kind: String, hazard: Node3D) -> void:
 	if body != player or not playing:
 		return
 	if kind == "puddle":
-		player.velocity.x += sign(player.position.x) * -4.0
+		player.velocity.x += (-1.0 if player.position.x > 0.0 else 1.0) * 5.0
+		player.fuel = max(0.0, player.fuel - 4.0)
 		return
 	if kind == "bush" and kit_left > 0:
 		kit_left -= 1
 		hazard.queue_free()
 		return
-	_end(false)
+	_end(false, "оборвалось на " + zone.to_lower())
 
-func _start() -> void:
-	for n in spawned:
+func _clear_hazards() -> void:
+	for n in hazards:
 		if is_instance_valid(n):
 			n.queue_free()
-	spawned.clear()
-	player.position = Vector3(0, 0.6, 0)
-	player.velocity = Vector3.ZERO
-	player.speed = 8.0
+	hazards.clear()
+
+func _start() -> void:
+	_clear_hazards()
+	world.reset()
+	player.reset_run()
 	player.engine_upgrade = engine
 	player.tires_upgrade = tires
+	player.playing = true
 	start_z = player.global_position.z
 	kit_left = 1 if kit else 0
 	playing = true
 	menu.visible = false
 	over.visible = false
 	shop.visible = false
+	world.sync(player.global_position.z, 0.0)
 
-func _end(win: bool) -> void:
+func _end(win: bool, reason: String) -> void:
 	playing = false
+	player.playing = false
 	var dist := start_z - player.global_position.z
 	var gain := maxi(1, int(dist / 180.0) + (8 if win else 0))
 	tokens += gain
@@ -141,7 +152,7 @@ func _end(win: bool) -> void:
 		best = dist
 	_save()
 	over_title.text = "ДОВЁЗ" if win else "ПАКЕТ НЕ ДОШЁЛ"
-	over_sub.text = ("свои приняли пакет" if win else "оборвалось на " + zone.toLower()) + "  +" + str(gain)
+	over_sub.text = reason + "  +" + str(gain)
 	over.visible = true
 	_refresh_menu()
 
