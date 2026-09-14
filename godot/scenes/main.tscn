@@ -1,0 +1,297 @@
+[gd_scene load_steps=8 format=3 uid="uid://svyaznoymain"]
+
+[ext_resource type="Script" path="res://scripts/game.gd" id="1_game"]
+[ext_resource type="Script" path="res://scripts/player.gd" id="2_player"]
+
+[sub_resource type="ProceduralSkyMaterial" id="SkyMat"]
+sky_top_color = Color(0.35, 0.48, 0.62, 1)
+sky_horizon_color = Color(0.91, 0.82, 0.62, 1)
+ground_bottom_color = Color(0.28, 0.36, 0.16, 1)
+ground_horizon_color = Color(0.55, 0.58, 0.32, 1)
+
+[sub_resource type="Sky" id="Sky"]
+sky_material = SubResource("SkyMat")
+
+[sub_resource type="Environment" id="Env"]
+background_mode = 2
+sky = SubResource("Sky")
+ambient_light_source = 2
+ambient_light_color = Color(0.72, 0.68, 0.55, 1)
+tonemap_mode = 2
+fog_enabled = true
+fog_density = 0.004
+
+[sub_resource type="BoxShape3D" id="PlayerShape"]
+size = Vector3(0.7, 1.2, 1.6)
+
+[sub_resource type="StandardMaterial3D" id="RoadMat"]
+albedo_color = Color(0.38, 0.28, 0.18, 1)
+
+[node name="Game" type="Node3D"]
+script = ExtResource("1_game")
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Env")
+
+[node name="Sun" type="DirectionalLight3D" parent="."]
+transform = Transform3D(0.866, -0.35, 0.356, 0, 0.713, 0.701, -0.5, -0.607, 0.618, 12, 18, 8)
+shadow_enabled = true
+light_energy = 1.35
+
+[node name="Ground" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.2, -400)
+use_collision = true
+size = Vector3(80, 0.4, 1200)
+
+[node name="Road" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.02, -400)
+size = Vector3(8, 0.05, 1200)
+material = SubResource("RoadMat")
+
+[node name="Player" type="CharacterBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.7, 0)
+script = ExtResource("2_player")
+
+[node name="Body" type="CSGBox3D" parent="Player"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.35, 0)
+size = Vector3(0.55, 0.35, 1.5)
+
+[node name="Rider" type="CSGBox3D" parent="Player"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.95, 0.1)
+size = Vector3(0.45, 0.8, 0.45)
+
+[node name="Helmet" type="CSGSphere3D" parent="Player"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.45, 0.12)
+radius = 0.22
+
+[node name="Col" type="CollisionShape3D" parent="Player"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.6, 0)
+shape = SubResource("PlayerShape")
+
+[node name="CamPivot" type="Node3D" parent="Player"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.8, 5.2)
+
+[node name="Camera3D" type="Camera3D" parent="Player/CamPivot"]
+current = true
+fov = 62.0
+far = 400.0
+
+[node name="UI" type="CanvasLayer" parent="."]
+
+[node name="HUD" type="Control" parent="UI"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+
+[node name="Zone" type="Label" parent="UI/HUD"]
+offset_left = 24.0
+offset_top = 24.0
+offset_right = 280.0
+offset_bottom = 64.0
+text = "ПОЛЕ"
+
+[node name="Dist" type="Label" parent="UI/HUD"]
+offset_left = 24.0
+offset_top = 64.0
+offset_right = 280.0
+offset_bottom = 96.0
+text = "0 м"
+
+[node name="Speed" type="Label" parent="UI/HUD"]
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -200.0
+offset_top = 24.0
+offset_right = -24.0
+offset_bottom = 64.0
+text = "0 км/ч"
+horizontal_alignment = 2
+
+[node name="Left" type="Button" parent="UI/HUD"]
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 24.0
+offset_top = -140.0
+offset_right = 124.0
+offset_bottom = -40.0
+text = "<"
+
+[node name="Right" type="Button" parent="UI/HUD"]
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -124.0
+offset_top = -140.0
+offset_right = -24.0
+offset_bottom = -40.0
+text = ">"
+
+[node name="Menu" type="ColorRect" parent="UI"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+color = Color(0.07, 0.06, 0.04, 0.72)
+
+[node name="Card" type="Panel" parent="UI/Menu"]
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -200.0
+offset_top = -220.0
+offset_right = 200.0
+offset_bottom = 220.0
+
+[node name="Title" type="Label" parent="UI/Menu/Card"]
+offset_top = 24.0
+offset_right = 400.0
+offset_bottom = 72.0
+text = "СВЯЗНОЙ"
+horizontal_alignment = 1
+
+[node name="Best" type="Label" parent="UI/Menu/Card"]
+offset_top = 90.0
+offset_right = 400.0
+offset_bottom = 120.0
+text = "рекорд 0 м"
+horizontal_alignment = 1
+
+[node name="Tokens" type="Label" parent="UI/Menu/Card"]
+offset_top = 120.0
+offset_right = 400.0
+offset_bottom = 150.0
+text = "жетоны 0"
+horizontal_alignment = 1
+
+[node name="Go" type="Button" parent="UI/Menu/Card"]
+offset_left = 40.0
+offset_top = 190.0
+offset_right = 360.0
+offset_bottom = 250.0
+text = "ПОЕХАЛИ"
+
+[node name="OpenShop" type="Button" parent="UI/Menu/Card"]
+offset_left = 40.0
+offset_top = 270.0
+offset_right = 360.0
+offset_bottom = 320.0
+text = "МАГАЗИН"
+
+[node name="Shop" type="ColorRect" parent="UI"]
+visible = false
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+color = Color(0.07, 0.06, 0.04, 0.72)
+
+[node name="Card" type="Panel" parent="UI/Shop"]
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -200.0
+offset_top = -240.0
+offset_right = 200.0
+offset_bottom = 240.0
+
+[node name="Title" type="Label" parent="UI/Shop/Card"]
+offset_top = 20.0
+offset_right = 400.0
+offset_bottom = 60.0
+text = "МАГАЗИН"
+horizontal_alignment = 1
+
+[node name="Tokens" type="Label" parent="UI/Shop/Card"]
+offset_top = 70.0
+offset_right = 400.0
+offset_bottom = 100.0
+text = "жетоны 0"
+horizontal_alignment = 1
+
+[node name="BuyTires" type="Button" parent="UI/Shop/Card"]
+offset_left = 40.0
+offset_top = 120.0
+offset_right = 360.0
+offset_bottom = 170.0
+text = "Резина  8"
+
+[node name="BuyEngine" type="Button" parent="UI/Shop/Card"]
+offset_left = 40.0
+offset_top = 186.0
+offset_right = 360.0
+offset_bottom = 236.0
+text = "Мотор  12"
+
+[node name="BuyKit" type="Button" parent="UI/Shop/Card"]
+offset_left = 40.0
+offset_top = 252.0
+offset_right = 360.0
+offset_bottom = 302.0
+text = "Ремнабор  15"
+
+[node name="Back" type="Button" parent="UI/Shop/Card"]
+offset_left = 40.0
+offset_top = 340.0
+offset_right = 360.0
+offset_bottom = 390.0
+text = "НАЗАД"
+
+[node name="Over" type="ColorRect" parent="UI"]
+visible = false
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+color = Color(0.07, 0.06, 0.04, 0.72)
+
+[node name="Card" type="Panel" parent="UI/Over"]
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -200.0
+offset_top = -180.0
+offset_right = 200.0
+offset_bottom = 180.0
+
+[node name="Title" type="Label" parent="UI/Over/Card"]
+offset_top = 24.0
+offset_right = 400.0
+offset_bottom = 70.0
+text = "ПАКЕТ НЕ ДОШЁЛ"
+horizontal_alignment = 1
+
+[node name="Sub" type="Label" parent="UI/Over/Card"]
+offset_top = 80.0
+offset_right = 400.0
+offset_bottom = 130.0
+horizontal_alignment = 1
+
+[node name="Again" type="Button" parent="UI/Over/Card"]
+offset_left = 40.0
+offset_top = 150.0
+offset_right = 360.0
+offset_bottom = 210.0
+text = "ЕЩЁ РЕЙД"
+
+[node name="ToMenu" type="Button" parent="UI/Over/Card"]
+offset_left = 40.0
+offset_top = 230.0
+offset_right = 360.0
+offset_bottom = 280.0
+text = "В МЕНЮ"
+
+[connection signal="button_down" from="UI/HUD/Left" to="Player" method="set_steer" binds= [-1.0]]
+[connection signal="button_up" from="UI/HUD/Left" to="Player" method="set_steer" binds= [0.0]]
+[connection signal="button_down" from="UI/HUD/Right" to="Player" method="set_steer" binds= [1.0]]
+[connection signal="button_up" from="UI/HUD/Right" to="Player" method="set_steer" binds= [0.0]]
+[connection signal="pressed" from="UI/Menu/Card/Go" to="." method="_start"]
+[connection signal="pressed" from="UI/Menu/Card/OpenShop" to="." method="_open_shop"]
+[connection signal="pressed" from="UI/Shop/Card/BuyTires" to="." method="buy" binds= ["tires", 8]]
+[connection signal="pressed" from="UI/Shop/Card/BuyEngine" to="." method="buy" binds= ["engine", 12]]
+[connection signal="pressed" from="UI/Shop/Card/BuyKit" to="." method="buy" binds= ["kit", 15]]
+[connection signal="pressed" from="UI/Shop/Card/Back" to="." method="_close_shop"]
+[connection signal="pressed" from="UI/Over/Card/Again" to="." method="_start"]
+[connection signal="pressed" from="UI/Over/Card/ToMenu" to="." method="_to_menu"]
