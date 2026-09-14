@@ -13,6 +13,3 @@ https://htmlpreview.github.io/?https://github.com/nifigovochka-beep/svyaznoy/blo
 ## Файлы
 - `index.html` — вся игра
 - `CONCEPT.md` — смысл, зоны, магазин, правила доработки
-
-## Старый прототип
-https://github.com/nifigovochka-beep/moto-gonka
