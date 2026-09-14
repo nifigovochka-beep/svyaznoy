@@ -31,7 +31,7 @@ func _paint() -> void:
 	_box(Vector3(-6.2, prop_h * 0.5, -length * 0.2), Vector3(0.7, prop_h, 1.0), prop_c)
 	_box(Vector3(6.2, prop_h * 0.5, length * 0.15), Vector3(0.7, prop_h, 1.0), prop_c)
 
-func _box(pos: Vector3, size: Vector3, color: Color, ) -> void:
+func _box(pos: Vector3, size: Vector3, color: Color) -> void:
 	var m := MeshInstance3D.new()
 	var b := BoxMesh.new()
 	b.size = size
